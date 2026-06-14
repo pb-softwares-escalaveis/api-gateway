@@ -1,0 +1,51 @@
+spring:
+  application:
+    name: api-gateway
+  security:
+    oauth2:
+      client:
+        provider:
+          keycloak:
+            issuer-uri: ${KEYCLOAK_SERVER_URL:http://localhost:8081}/realms/leilao-service
+        registration:
+          keycloak:
+            provider: keycloak
+            client-id: api-gateway
+            client-secret: ${KEYCLOAK_CLIENT_SECRET}
+            authorization-grant-type: authorization_code
+            scope: openid, profile, email
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+
+  cloud:
+    gateway:
+      server:
+        webmvc:
+          routes:
+            - id: user-service
+              uri: lb://USER-SERVICE
+              predicates:
+                - Path=/api/users/**
+              filters:
+                - TokenRelay=
+            - id: auction-service
+              uri: lb://AUCTION-SERVICE
+              predicates:
+                - Path=/api/auctions/**
+              filters:
+                - TokenRelay=
+            - id: gateway-health
+              uri: forward:/actuator/health
+              predicates:
+                - Path=/health
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka}
+    enabled: true
+    register-with-eureka: false
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+
+server:
+  port: 80
