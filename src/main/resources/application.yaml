@@ -1,12 +1,24 @@
+server:
+  port: 9999
+
 spring:
   application:
     name: api-gateway
+
   security:
     oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_INTERNAL_URL}/realms/leilao-service
+
       client:
         provider:
           keycloak:
-            issuer-uri: ${KEYCLOAK_SERVER_URL:http://localhost:8081}/realms/leilao-service
+            authorization-uri: ${KEYCLOAK_EXTERNAL_URL}/realms/leilao-service/protocol/openid-connect/auth
+            token-uri: ${KEYCLOAK_INTERNAL_URL}/realms/leilao-service/protocol/openid-connect/token
+            user-info-uri: ${KEYCLOAK_INTERNAL_URL}/realms/leilao-service/protocol/openid-connect/userinfo
+            jwk-set-uri: ${KEYCLOAK_INTERNAL_URL}/realms/leilao-service/protocol/openid-connect/certs
+            user-name-attribute: sub
         registration:
           keycloak:
             provider: keycloak
@@ -21,31 +33,45 @@ spring:
       server:
         webmvc:
           routes:
-            - id: user-service
-              uri: lb://USER-SERVICE
-              predicates:
-                - Path=/api/users/**
-              filters:
-                - TokenRelay=
-            - id: auction-service
-              uri: lb://AUCTION-SERVICE
-              predicates:
-                - Path=/api/auctions/**
-              filters:
-                - TokenRelay=
             - id: gateway-health
               uri: forward:/actuator/health
               predicates:
                 - Path=/health
+
 eureka:
   client:
     service-url:
-      defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka}
-    enabled: true
+      defaultZone: http://eureka-server:8761/eureka/
     register-with-eureka: false
     fetch-registry: true
   instance:
     prefer-ip-address: true
 
-server:
-  port: 80
+resilience4j.circuitbreaker:
+  configs:
+    default:
+      slidingWindowSize: 10
+      failureRateThreshold: 50
+      waitDurationInOpenState: 10000ms
+      permittedNumberOfCallsInHalfOpenState: 3
+  instances:
+    userServiceCB:
+      base-config: default
+    auctionServiceCB:
+      base-config: default
+
+resilience4j.timelimiter:
+  configs:
+    default:
+      timeoutDuration: 5s
+  instances:
+    userServiceCB:
+      base-config: default
+    auctionServiceCB:
+      base-config: default
+
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG
+    org.springframework.cloud.gateway.server.mvc.filter.TokenRelayFilterFunctions: DEBUG
+    org.springframework.web.servlet.function.support.RouterFunctionMapping: DEBUG

@@ -1,1 +1,24 @@
-services: {}
+services:
+  api-gateway:
+    container_name: api-gateway
+    image: shyuu7/api-gateway:latest
+    ports:
+      - "9999:9999"
+    networks:
+      - leilao-network
+    environment:
+      EUREKA_SERVER_URL: ${EUREKA_SERVER_URL}
+      KEYCLOAK_INTERNAL_URL: ${KEYCLOAK_INTERNAL_URL}
+      KEYCLOAK_EXTERNAL_URL: ${KEYCLOAK_EXTERNAL_URL}
+      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9999/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  leilao-network:
+    external: true

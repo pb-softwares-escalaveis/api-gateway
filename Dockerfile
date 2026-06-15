@@ -12,6 +12,7 @@ RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
 COPY --from=builder --chown=appuser:appgroup /app/target/*.jar app.jar
 
+EXPOSE 9999
 USER appuser
 
 ENTRYPOINT ["java", "-jar", "app.jar"]

@@ -1,4 +1,4 @@
-package br.com.infnet.api_gateway.filters;
+package br.com.infnet.api_gateway.filter;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.core.Authentication;
@@ -17,8 +18,9 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.*;
 
+@Slf4j
 @Component
-@Order(10)
+@Order(0)
 @RequiredArgsConstructor
 public class UserHeadersFilter extends OncePerRequestFilter {
 
@@ -26,10 +28,17 @@ public class UserHeadersFilter extends OncePerRequestFilter {
     protected void doFilterInternal(@NonNull HttpServletRequest request,
                                     @NonNull HttpServletResponse response,
                                     @NonNull FilterChain chain) throws ServletException, IOException {
-
+        log.debug("Executando UserHeadersFilter, autenticado: {}",
+                SecurityContextHolder.getContext().getAuthentication() != null);
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.isAuthenticated() && auth.getPrincipal() instanceof OAuth2User oauth2User) {
             Map<String, Object> attrs = oauth2User.getAttributes();
+
+            if (!attrs.containsKey("user_id")) {
+                log.warn("Atributos customizados não encontrados. O CustomOAuth2UserService não foi chamado.");
+                chain.doFilter(request, response);
+                return;
+            }
 
             String userId = (String) attrs.get("user_id");
             String email = (String) attrs.get("user_email");
