@@ -28,6 +28,7 @@ spring:
             scope: openid, profile, email
             redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
 
+
   cloud:
     gateway:
       server:
@@ -54,21 +55,11 @@ resilience4j.circuitbreaker:
       failureRateThreshold: 50
       waitDurationInOpenState: 10000ms
       permittedNumberOfCallsInHalfOpenState: 3
-  instances:
-    userServiceCB:
-      base-config: default
-    auctionServiceCB:
-      base-config: default
 
 resilience4j.timelimiter:
   configs:
     default:
       timeoutDuration: 5s
-  instances:
-    userServiceCB:
-      base-config: default
-    auctionServiceCB:
-      base-config: default
 
 logging:
   level:

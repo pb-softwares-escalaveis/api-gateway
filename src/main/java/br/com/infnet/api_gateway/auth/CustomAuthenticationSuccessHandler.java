@@ -26,7 +26,6 @@ import java.util.UUID;
 @Component
 @RequiredArgsConstructor
 public class CustomAuthenticationSuccessHandler implements AuthenticationSuccessHandler {
-
     private final UserStatusService userStatusService;
 
     @Override
@@ -36,7 +35,7 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
         OAuth2AuthenticationToken oauthToken = (OAuth2AuthenticationToken) authentication;
         OAuth2User oauth2User = oauthToken.getPrincipal();
 
-        // Extrai informações básicas
+        //Extrai informações básicas
         assert oauth2User != null;
         Map<String, Object> attrs = new HashMap<>(oauth2User.getAttributes());
         String sub = attrs.get("sub").toString();
@@ -46,38 +45,39 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
 
         log.info("Enriquecendo usuário após login: userId={}, email={}", userId, email);
 
-        // Chama o user-service para obter status
+        //Chama o user-service para obter status
         UserStatusResponse statusResponse = userStatusService.getUserStatus(userId);
         if (statusResponse == null) {
             log.warn("Resposta nula do userStatusService, usando valores padrão");
             statusResponse = new UserStatusResponse(userId, "UNKNOWN", false);
         }
 
-        // Adiciona atributos customizados
+        //Adiciona atributos customizados
         attrs.put("user_id", userId.toString());
         attrs.put("user_email", email);
         attrs.put("user_name", nome);
         attrs.put("user_status", statusResponse.status());
         attrs.put("user_allowed", statusResponse.isAllowed());
+        attrs.put("correlation_id", UUID.randomUUID().toString());
 
-        // Cria um novo OAuth2User com os atributos enriquecidos
+        //Cria um novo OAuth2User com os atributos enriquecidos
         OAuth2User newOAuth2User = new DefaultOAuth2User(oauth2User.getAuthorities(), attrs, "sub");
 
-        // Cria uma nova autenticação
+        //Cria uma nova autenticação
         Authentication newAuth = new OAuth2AuthenticationToken(
                 newOAuth2User,
                 newOAuth2User.getAuthorities(),
                 oauthToken.getAuthorizedClientRegistrationId()
         );
 
-        // Atualiza o SecurityContextHolder
+        //Atualiza o SecurityContextHolder
         SecurityContextHolder.getContext().setAuthentication(newAuth);
 
-        // Persiste o SecurityContext na sessão (crucial!)
+        //Persiste o SecurityContext na sessão
         HttpSession session = request.getSession(true);
         session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, SecurityContextHolder.getContext());
 
-        // Redireciona para a página inicial
-        response.sendRedirect(request.getContextPath() + "/");
+        //Redireciona para a página inicial do front-end
+        response.sendRedirect("http://frontend:3000/");
     }
 }

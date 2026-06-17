@@ -23,36 +23,126 @@ public class GatewayRoutesConfig {
         log.debug("GatewayRoutesConfig carregada!");
     }
 
+    // ============================================================
+    // USER-SERVICE
+    // ============================================================
+
+    //Rotas públicas
     @Bean
-    public RouterFunction<ServerResponse> userServiceRoute() {
-        log.debug("Registrando rota para USER-SERVICE com path /usuarios/**");
-        return route("user-service")
-                .route(path("/usuarios/**"), http())
-                .before(request -> {
-                    log.info("Requisição capturada pela rota: {}", request.uri());
-                    return request;
-                })
+    public RouterFunction<ServerResponse> userServicePublicRoutes() {
+        return route("user-service-public")
+                .route(path("/usuarios/{id}/perfil"), http())
+                .route(path("/usuarios/{id}/seller-info"), http())
+                .route(path("/usuarios/listar-usernames"), http())
                 .filter(lb("USER-SERVICE"))
-                .before(request -> {
-                    log.info("Headers antes do relay: {}", request.headers());
-                    return request;
-                })
-                .filter(tokenRelay())
-                .before(request -> {
-                    log.info("Headers depois do relay: {}", request.headers());
-                    return request;
-                })
+                .build();
+    }
+
+    //Rota de criação
+    @Bean
+    public RouterFunction<ServerResponse> userServiceCreateRoute() {
+        return route("user-service-create")
+                .route(path("/usuarios/novo"), http())
+                .filter(lb("USER-SERVICE"))
                 .filter(circuitBreaker("userServiceCB", URI.create("forward:/fallback/user-service")))
                 .build();
     }
 
+    //Rotas autenticadas
     @Bean
-    public RouterFunction<ServerResponse> auctionServiceRoute() {
-        return route("auction-service")
-                .route(path("/api/auctions/**"), http())
+    public RouterFunction<ServerResponse> userServiceProtectedRoutes() {
+        return route("user-service-protected")
+                .route(path("/usuarios/listar-pfps"), http())
+                .route(path("/usuarios/trocar-pfp"), http())
+                .route(path("/usuarios/{id}"), http())
+                .filter(lb("USER-SERVICE"))
+                .filter(tokenRelay())
+                .filter(circuitBreaker("userServiceCB", URI.create("forward:/fallback/user-service")))
+                .build();
+    }
+
+    // ============================================================
+    // AUCTION-SERVICE
+    // ============================================================
+
+    //Rota pública
+    @Bean
+    public RouterFunction<ServerResponse> auctionServicePublicRoutes() {
+        return route("auction-service-public")
+                .route(path("/auctions/{auctionId}"), http())
+                .filter(lb("AUCTION-SERVICE"))
+                .build();
+    }
+
+    //Rotas autenticadas
+    @Bean
+    public RouterFunction<ServerResponse> auctionServiceProtectedRoutes() {
+        return route("auction-service-protected")
+                .route(path("/auctions/create"), http())
+                .route(path("/auctions/{auctionId}/renew"), http())
+                .route(path("/auctions/{auctionId}/bids/place"), http())
+                .route(path("/auctions/{auctionId}"), http())
+                .route(path("/auctions"), http())
                 .filter(lb("AUCTION-SERVICE"))
                 .filter(tokenRelay())
                 .filter(circuitBreaker("auctionServiceCB", URI.create("forward:/fallback/auction-service")))
+                .build();
+    }
+
+    // ============================================================
+    // LISTING-SERVICE (Tudo Público)
+    // ============================================================
+
+    @Bean
+    public RouterFunction<ServerResponse> listingServiceRoutes() {
+        return route("listing-service")
+                .route(path("/listings/**"), http())
+                .filter(lb("LISTING-SERVICE"))
+                .build();
+    }
+
+    // ============================================================
+    // RECOMMENDATION-SERVICE (Tudo Público)
+    // ============================================================
+
+    @Bean
+    public RouterFunction<ServerResponse> recommendationServiceRoutes() {
+        return route("recommendation-service")
+                .route(path("/recommendations/**"), http())
+                .filter(lb("RECOMMENDATION-SERVICE"))
+                .build();
+    }
+
+    // ============================================================
+    // PAYMENT-SERVICE (Tudo Privado)
+    // ============================================================
+
+    @Bean
+    public RouterFunction<ServerResponse> paymentServiceProtectedRoutes() {
+        return route("payment-service-protected")
+                .route(path("/payments/{id}"), http())
+                .route(path("/payments/transaction/{id}"), http())
+                .route(path("/payments/auction/{id}"), http())
+                .route(path("/payments/bidder/{id}"), http())
+                .route(path("/simulate/{providerPaymentId}"), http())
+                .filter(lb("PAYMENT-SERVICE"))
+                .filter(tokenRelay())
+                .filter(circuitBreaker("paymentServiceCB", URI.create("forward:/fallback/payment-service")))
+                .build();
+    }
+
+    // ============================================================
+    // TRANSACTION-SERVICE (Tudo Privado)
+    // ============================================================
+
+    @Bean
+    public RouterFunction<ServerResponse> transactionServiceProtectedRoutes() {
+        return route("transaction-service-protected")
+                .route(path("/transactions/{id}"), http())
+                .route(path("/transactions/{id}/confirm-delivery"), http())
+                .filter(lb("TRANSACTION-SERVICE"))
+                .filter(tokenRelay())
+                .filter(circuitBreaker("transactionServiceCB", URI.create("forward:/fallback/transaction-service")))
                 .build();
     }
 }
