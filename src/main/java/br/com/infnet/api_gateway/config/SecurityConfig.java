@@ -67,14 +67,19 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/recommendations/**").permitAll()
 
                         // ============================================================
-                        // 7. USER-SERVICE PRIVADOS
+                        // 7. QA-SERVICE PÚBLICOS
+                        // ============================================================
+                        .requestMatchers(HttpMethod.GET, "/api/qa/auctions/{auctionId}/questions").permitAll()
+
+                        // ============================================================
+                        // 8. USER-SERVICE PRIVADOS
                         // ============================================================
                         .requestMatchers(HttpMethod.GET, "/usuarios/listar-pfps").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/usuarios/trocar-pfp").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/usuarios/{id}").authenticated()
 
                         // ============================================================
-                        // 8. AUCTION-SERVICE PRIVADOS
+                        // 9. AUCTION-SERVICE PRIVADOS
                         // ============================================================
                         .requestMatchers(HttpMethod.POST, "/auctions/create").authenticated()
                         .requestMatchers(HttpMethod.POST, "/auctions/{auctionId}/renew").authenticated()
@@ -83,19 +88,27 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/auctions").authenticated()
 
                         // ============================================================
-                        // 9. PAYMENT-SERVICE (TUDO PRIVADO)
+                        // 10. QA-SERVICE PRIVADOS
+                        // ============================================================
+                        .requestMatchers(HttpMethod.POST, "/api/qa/auctions/{auctionId}/questions").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/qa/questions/{questionId}").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/qa/questions/{questionId}/answers").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/qa/questions/{questionId}/answers/{answerId}").authenticated()
+
+                        // ============================================================
+                        // 11. PAYMENT-SERVICE (TUDO PRIVADO)
                         // ============================================================
                         .requestMatchers(HttpMethod.GET, "/payments/**").authenticated()
                         .requestMatchers(HttpMethod.POST, "/simulate/**").authenticated()
 
                         // ============================================================
-                        // 10. TRANSACTION-SERVICE (TUDO PRIVADO)
+                        // 12. TRANSACTION-SERVICE (TUDO PRIVADO)
                         // ============================================================
                         .requestMatchers(HttpMethod.GET, "/transactions/**").authenticated()
                         .requestMatchers(HttpMethod.POST, "/transactions/**").authenticated()
 
                         // ============================================================
-                        // 11. FALLBACK
+                        // 13. FALLBACK
                         // ============================================================
                         .anyRequest().authenticated()
                 )

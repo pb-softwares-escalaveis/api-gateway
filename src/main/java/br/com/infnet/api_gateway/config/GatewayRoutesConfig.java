@@ -132,6 +132,33 @@ public class GatewayRoutesConfig {
     }
 
     // ============================================================
+    // QA-SERVICE (Perguntas e Respostas)
+    // ============================================================
+
+    // Rota pública
+    @Bean
+    public RouterFunction<ServerResponse> qaServicePublicRoutes() {
+        return route("qa-service-public")
+                .route(path("/api/qa/auctions/{auctionId}/questions"), http())
+                .filter(lb("QA-SERVICE"))
+                .build();
+    }
+
+    // Rotas privadas
+    @Bean
+    public RouterFunction<ServerResponse> qaServiceProtectedRoutes() {
+        return route("qa-service-protected")
+                .route(path("/api/qa/auctions/{auctionId}/questions"), http())
+                .route(path("/api/qa/questions/{questionId}"), http())
+                .route(path("/api/qa/questions/{questionId}/answers"), http())
+                .route(path("/api/qa/questions/{questionId}/answers/{answerId}"), http())
+                .filter(lb("QA-SERVICE"))
+                .filter(tokenRelay())
+                .filter(circuitBreaker("qaServiceCB", URI.create("forward:/fallback/qa-service")))
+                .build();
+    }
+
+    // ============================================================
     // TRANSACTION-SERVICE (Tudo Privado)
     // ============================================================
 
