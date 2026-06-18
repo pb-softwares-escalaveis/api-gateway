@@ -172,4 +172,20 @@ public class GatewayRoutesConfig {
                 .filter(circuitBreaker("transactionServiceCB", URI.create("forward:/fallback/transaction-service")))
                 .build();
     }
+
+    // ============================================================
+    // REPORT-SERVICE (Tudo Privado)
+    // ============================================================
+
+    @Bean
+    public RouterFunction<ServerResponse> reportServiceProtectedRoutes() {
+        return route("report-service-protected")
+                .route(path("/report-auction/**"), http())
+                .route(path("/report-message/**"), http())
+                .filter(lb("REPORT-SERVICE"))
+                .filter(tokenRelay())
+                .filter(circuitBreaker("reportServiceCB", URI.create("forward:/fallback/report-service")))
+                .build();
+    }
+
 }

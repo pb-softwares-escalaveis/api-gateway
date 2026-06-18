@@ -102,13 +102,19 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/simulate/**").authenticated()
 
                         // ============================================================
-                        // 12. TRANSACTION-SERVICE (TUDO PRIVADO)
+                        // 12. REPORT-SERVICE (TUDO PRIVADO)
+                        // ============================================================
+                        .requestMatchers(HttpMethod.POST, "/report-auction/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/report-message/**").authenticated()
+
+                        // ============================================================
+                        // 13. TRANSACTION-SERVICE (TUDO PRIVADO)
                         // ============================================================
                         .requestMatchers(HttpMethod.GET, "/transactions/**").authenticated()
                         .requestMatchers(HttpMethod.POST, "/transactions/**").authenticated()
 
                         // ============================================================
-                        // 13. FALLBACK
+                        // 14. FALLBACK
                         // ============================================================
                         .anyRequest().authenticated()
                 )
