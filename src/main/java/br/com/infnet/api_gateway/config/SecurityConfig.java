@@ -32,8 +32,6 @@ public class SecurityConfig {
                         "/actuator/health",
                         "/actuator/circuitbreakers",
                         "/fallback/**",
-                        "/oauth2/**",
-                        "/login/**",
 
                         // User-service públicos
                         "/usuarios/novo",
@@ -49,9 +47,6 @@ public class SecurityConfig {
                 )
 
                 .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
-                .oauth2Login(AbstractHttpConfigurer::disable)
-                .oauth2Client(AbstractHttpConfigurer::disable)
-                // Desabilita exigência do JWT
                 .oauth2ResourceServer(AbstractHttpConfigurer::disable)
                 .csrf(AbstractHttpConfigurer::disable);
 
@@ -93,7 +88,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/report-auction/**").authenticated()
                         .requestMatchers(HttpMethod.POST, "/report-message/**").authenticated()
 
-                        // Qualquer outra requisição precisa estar autenticada
+                        // Fallback
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth2 -> oauth2
@@ -107,6 +102,7 @@ public class SecurityConfig {
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(Customizer.withDefaults())
                 )
+                .csrf(AbstractHttpConfigurer::disable)
                 .logout(logout -> logout
                         .logoutUrl("/logout")
                         .logoutSuccessHandler(logoutSuccessHandler)
