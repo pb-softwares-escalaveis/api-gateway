@@ -54,7 +54,7 @@ public class GatewayRoutesConfig {
         return route("user-service-protected")
                 .route(path("/usuarios/listar-pfps"), http())
                 .route(path("/usuarios/trocar-pfp"), http())
-                .route(path("/usuarios/{id}"), http())
+                .route(path("/usuarios/deletar/{id}"), http())
                 .filter(lb("USER-SERVICE"))
                 .filter(tokenRelay())
                 .filter(circuitBreaker("userServiceCB", URI.create("forward:/fallback/user-service")))
