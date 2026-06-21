@@ -30,50 +30,84 @@ public class KeycloakLogoutSuccessHandler implements LogoutSuccessHandler {
     public void onLogoutSuccess(@NonNull HttpServletRequest request,
                                 @NonNull HttpServletResponse response,
                                 Authentication authentication) throws IOException {
-        log.info("=== Iniciando logout ===");
-        String keycloakLogoutUrl = keycloakExternalUrl + "/realms/leilao-service/protocol/openid-connect/logout";
-        StringBuilder logoutUrl = new StringBuilder(keycloakLogoutUrl);
 
-        //Tenta obter o ID token para revogar a sessão no Keycloak
-        String idToken = null;
+        log.info("Iniciando processo de logout");
+        long startTime = System.currentTimeMillis();
 
-        if (authentication != null) {
-            Object principal = authentication.getPrincipal();
+        String userId = null;
+        String email;
 
-            //Para OIDC
-            if (principal instanceof OidcUser oidcUser) {
-                idToken = oidcUser.getIdToken().getTokenValue();
-                log.debug("ID Token obtido do OidcUser");
+        if (authentication != null && authentication.getPrincipal() instanceof OAuth2User oauth2User) {
+            userId = oauth2User.getAttribute("user_id");
+            email = oauth2User.getAttribute("email");
+            if (userId == null) {
+                userId = oauth2User.getAttribute("sub");
             }
-            //Para OAuth2
-            else if (principal instanceof OAuth2User) {
-                Object idTokenAttr = request.getSession().getAttribute("id_token");
-                if (idTokenAttr != null) {
-                    idToken = idTokenAttr.toString();
-                    log.debug("ID Token obtido da sessão");
+            log.info("Usuário autenticado durante logout: userId={}, email={}", userId, email);
+        } else {
+            log.debug("Nenhum usuário autenticado encontrado durante logout");
+        }
+
+        try {
+            String keycloakLogoutUrl = keycloakExternalUrl + "/realms/leilao-service/protocol/openid-connect/logout";
+            StringBuilder logoutUrl = new StringBuilder(keycloakLogoutUrl);
+
+            // Tenta obter o ID token para revogar a sessão no Keycloak
+            String idToken = null;
+
+            if (authentication != null) {
+                Object principal = authentication.getPrincipal();
+
+                // Para OIDC
+                if (principal instanceof OidcUser oidcUser) {
+                    idToken = oidcUser.getIdToken().getTokenValue();
+                    log.info("ID Token obtido do OidcUser para usuario: {}", userId);
+                }
+                // Para OAuth2
+                else if (principal instanceof OAuth2User) {
+                    Object idTokenAttr = request.getSession().getAttribute("id_token");
+                    if (idTokenAttr != null) {
+                        idToken = idTokenAttr.toString();
+                        log.info("ID Token obtido da sessão para usuário: {}", userId);
+                    } else {
+                        log.debug("ID Token não encontrado na sessão");
+                    }
                 }
             }
+
+            boolean firstParam = true;
+
+            if (idToken != null && !idToken.isEmpty()) {
+                logoutUrl.append("?id_token_hint=").append(idToken);
+                firstParam = false;
+                log.debug("ID Token adicionado a URL de logout");
+            } else {
+                log.warn("ID Token nao disponível, logout será realizado sem revogação do token");
+            }
+
+            String encodedRedirectUri = URLEncoder.encode(frontendUrl, StandardCharsets.UTF_8);
+            log.debug("Redirect URI codificada: {}", encodedRedirectUri);
+
+            if (firstParam) {
+                logoutUrl.append("?");
+            } else {
+                logoutUrl.append("&");
+            }
+            logoutUrl.append("post_logout_redirect_uri=").append(encodedRedirectUri);
+
+            long duration = System.currentTimeMillis() - startTime;
+            log.info("Redirecionando para logout do Keycloak: url={}, usuário={}, duração={}ms",
+                    logoutUrl, userId, duration);
+
+            // Redireciona para o logout do Keycloak
+            response.sendRedirect(logoutUrl.toString());
+
+            log.info("Logout concluído com sucesso para usuario: {}", userId);
+
+        } catch (Exception e) {
+            log.error("Erro durante o processo de logout para usuário {}: {}", userId, e.getMessage(), e);
+            // Mesmo com erro, tenta redirecionar para o frontend
+            response.sendRedirect(frontendUrl);
         }
-
-        boolean firstParam = true;
-
-        if (idToken != null) {
-            logoutUrl.append("?id_token_hint=").append(idToken);
-            firstParam = false;
-        }
-
-        String encodedRedirectUri = URLEncoder.encode(frontendUrl, StandardCharsets.UTF_8);
-
-        if (firstParam) {
-            logoutUrl.append("?");
-        } else {
-            logoutUrl.append("&");
-        }
-        logoutUrl.append("post_logout_redirect_uri=").append(encodedRedirectUri);
-
-        log.info("Redirecionando para: {}", logoutUrl);
-
-        //Redireciona para o logout do Keycloak
-        response.sendRedirect(logoutUrl.toString());
     }
 }

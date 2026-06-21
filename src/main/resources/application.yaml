@@ -28,16 +28,22 @@ spring:
             scope: openid, profile, email
             redirect-uri: "http://localhost:9999/login/oauth2/code/keycloak"
 
-
-  cloud:
-    gateway:
-      server:
-        webmvc:
-          routes:
-            - id: gateway-health
-              uri: forward:/actuator/health
-              predicates:
-                - Path=/health
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,info,metrics,prometheus,circuitbreakers,circuitbreakerevents"
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+  info:
+    env:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
 
 eureka:
   client:
@@ -49,23 +55,37 @@ eureka:
     prefer-ip-address: true
 
 resilience4j.circuitbreaker:
+  metrics:
+    enabled: true
   configs:
     default:
       slidingWindowSize: 10
       failureRateThreshold: 50
       waitDurationInOpenState: 10000ms
       permittedNumberOfCallsInHalfOpenState: 3
+      registerHealthIndicator: true
 
 resilience4j.timelimiter:
+  metrics:
+    enabled: true
   configs:
     default:
       timeoutDuration: 5s
+
 
 logging:
   level:
     org.springframework.cloud.gateway: DEBUG
     org.springframework.cloud.gateway.server.mvc.filter.TokenRelayFilterFunctions: DEBUG
     org.springframework.web.servlet.function.support.RouterFunctionMapping: DEBUG
+
     org.springframework.security: DEBUG
     org.springframework.security.oauth2.client: DEBUG
+    org.springframework.security.web: DEBUG
+
     org.springframework.web: DEBUG
+    org.springframework.web.reactive.function.client: DEBUG
+
+    io.github.resilience4j: DEBUG
+
+    io.micrometer: INFO

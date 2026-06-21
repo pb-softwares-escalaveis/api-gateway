@@ -26,57 +26,85 @@ import java.util.UUID;
 @Component
 @RequiredArgsConstructor
 public class CustomAuthenticationSuccessHandler implements AuthenticationSuccessHandler {
+
     private final UserStatusService userStatusService;
 
     @Override
     public void onAuthenticationSuccess(@NonNull HttpServletRequest request,
                                         @NonNull HttpServletResponse response,
                                         @NonNull Authentication authentication) throws IOException {
-        OAuth2AuthenticationToken oauthToken = (OAuth2AuthenticationToken) authentication;
-        OAuth2User oauth2User = oauthToken.getPrincipal();
 
-        //Extrai as informações do token
-        assert oauth2User != null;
-        Map<String, Object> attrs = new HashMap<>(oauth2User.getAttributes());
-        String sub = attrs.get("sub").toString();
-        UUID userId = UUID.fromString(sub);
-        String email = (String) attrs.get("email");
-        String nome = (String) attrs.get("name");
+        log.info("Iniciando processamento de login bem-sucedido");
+        long startTime = System.currentTimeMillis();
 
-        log.info("Enriquecendo usuário após login: userId={}, email={}", userId, email);
+        try {
+            OAuth2AuthenticationToken oauthToken = (OAuth2AuthenticationToken) authentication;
+            OAuth2User oauth2User = oauthToken.getPrincipal();
 
-        //Chama o user-service para obter o status do usuário
-        UserStatusResponse statusResponse = userStatusService.getUserStatus(userId);
-        if (statusResponse == null) {
-            log.warn("Resposta nula do userStatusService, usando valores padrão");
-            statusResponse = new UserStatusResponse(userId, "UNKNOWN", false);
+            // Extrai as informações do token
+            assert oauth2User != null;
+            Map<String, Object> attrs = new HashMap<>(oauth2User.getAttributes());
+            String sub = attrs.get("sub").toString();
+            UUID userId = UUID.fromString(sub);
+            String email = (String) attrs.get("email");
+            String nome = (String) attrs.get("name");
+
+            log.info("Extraindo informações do token: userId={}, email={}, authorities={}",
+                    userId, email, oauth2User.getAuthorities());
+
+            // Chama o user-service para obter o status do usuário
+            log.info("Consultando status do usuario no user-service: userId={}", userId);
+            UserStatusResponse statusResponse = userStatusService.getUserStatus(userId);
+
+            if (statusResponse == null) {
+                log.warn("Resposta nula do userStatusService, usando valores padrao para userId={}", userId);
+                statusResponse = new UserStatusResponse(userId, "UNKNOWN", false);
+            } else {
+                log.info("Status do usuario obtido com sucesso: userId={}, status={}, allowed={}",
+                        userId, statusResponse.status(), statusResponse.isAllowed());
+            }
+
+            // Adiciona os atributos customizados
+            attrs.put("user_id", userId.toString());
+            attrs.put("user_email", email);
+            attrs.put("user_name", nome);
+            attrs.put("user_status", statusResponse.status());
+            attrs.put("user_allowed", statusResponse.isAllowed());
+
+            log.debug("Atributos enriquecidos: {}", attrs.keySet());
+
+            // Cria um novo OAuth2User com os atributos enriquecidos
+            OAuth2User newOAuth2User = new DefaultOAuth2User(oauth2User.getAuthorities(), attrs, "sub");
+
+            // Cria uma nova autenticação
+            Authentication newAuth = new OAuth2AuthenticationToken(
+                    newOAuth2User,
+                    newOAuth2User.getAuthorities(),
+                    oauthToken.getAuthorizedClientRegistrationId()
+            );
+
+            // Atualiza o SecurityContextHolder
+            SecurityContextHolder.getContext().setAuthentication(newAuth);
+            log.info("SecurityContext atualizado para usuario: {}", userId);
+
+            // Persiste o SecurityContext na sessão
+            HttpSession session = request.getSession(true);
+            session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
+                    SecurityContextHolder.getContext());
+
+            // Redireciona para a página inicial do front-end
+            String redirectUrl = "http://localhost:3000/home";
+            log.info("Redirecionando para: {}", redirectUrl);
+
+            long duration = System.currentTimeMillis() - startTime;
+            log.info("Login concluido com sucesso: userId={}, email={}, duracao={}ms",
+                    userId, email, duration);
+
+            response.sendRedirect(redirectUrl);
+
+        } catch (Exception e) {
+            log.error("Erro durante o processamento do login: {}", e.getMessage(), e);
+            throw e;
         }
-
-        //Adiciona os atributos customizados
-        attrs.put("user_id", userId.toString());
-        attrs.put("user_email", email);
-        attrs.put("user_name", nome);
-        attrs.put("user_status", statusResponse.status());
-        attrs.put("user_allowed", statusResponse.isAllowed());
-
-        //Cria um novo OAuth2User com os atributos enriquecidos
-        OAuth2User newOAuth2User = new DefaultOAuth2User(oauth2User.getAuthorities(), attrs, "sub");
-
-        //Cria uma nova autenticação
-        Authentication newAuth = new OAuth2AuthenticationToken(
-                newOAuth2User,
-                newOAuth2User.getAuthorities(),
-                oauthToken.getAuthorizedClientRegistrationId()
-        );
-
-        //Atualiza o SecurityContextHolder
-        SecurityContextHolder.getContext().setAuthentication(newAuth);
-
-        //Persiste o SecurityContext na sessão
-        HttpSession session = request.getSession(true);
-        session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, SecurityContextHolder.getContext());
-
-        //Redireciona para a página inicial do front-end
-        response.sendRedirect("http://localhost:3000/home");
     }
 }
