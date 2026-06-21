@@ -35,7 +35,7 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
         OAuth2AuthenticationToken oauthToken = (OAuth2AuthenticationToken) authentication;
         OAuth2User oauth2User = oauthToken.getPrincipal();
 
-        //Extrai informações básicas
+        //Extrai as informações do token
         assert oauth2User != null;
         Map<String, Object> attrs = new HashMap<>(oauth2User.getAttributes());
         String sub = attrs.get("sub").toString();
@@ -45,14 +45,14 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
 
         log.info("Enriquecendo usuário após login: userId={}, email={}", userId, email);
 
-        //Chama o user-service para obter status
+        //Chama o user-service para obter o status do usuário
         UserStatusResponse statusResponse = userStatusService.getUserStatus(userId);
         if (statusResponse == null) {
             log.warn("Resposta nula do userStatusService, usando valores padrão");
             statusResponse = new UserStatusResponse(userId, "UNKNOWN", false);
         }
 
-        //Adiciona atributos customizados
+        //Adiciona os atributos customizados
         attrs.put("user_id", userId.toString());
         attrs.put("user_email", email);
         attrs.put("user_name", nome);
@@ -78,6 +78,6 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
         session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, SecurityContextHolder.getContext());
 
         //Redireciona para a página inicial do front-end
-        response.sendRedirect("http://frontend:3000/");
+        response.sendRedirect("http://localhost:3000/home");
     }
 }

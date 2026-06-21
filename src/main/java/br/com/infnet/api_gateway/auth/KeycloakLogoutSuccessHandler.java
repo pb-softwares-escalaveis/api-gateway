@@ -47,7 +47,6 @@ public class KeycloakLogoutSuccessHandler implements LogoutSuccessHandler {
             }
             //Para OAuth2
             else if (principal instanceof OAuth2User) {
-                //Tenta obter da sessão
                 Object idTokenAttr = request.getSession().getAttribute("id_token");
                 if (idTokenAttr != null) {
                     idToken = idTokenAttr.toString();
@@ -56,7 +55,6 @@ public class KeycloakLogoutSuccessHandler implements LogoutSuccessHandler {
             }
         }
 
-        //Adiciona parâmetros à URL
         boolean firstParam = true;
 
         if (idToken != null) {
@@ -65,7 +63,7 @@ public class KeycloakLogoutSuccessHandler implements LogoutSuccessHandler {
         }
 
         String encodedRedirectUri = URLEncoder.encode(frontendUrl, StandardCharsets.UTF_8);
-        //Adiciona redirect após logout
+
         if (firstParam) {
             logoutUrl.append("?");
         } else {
