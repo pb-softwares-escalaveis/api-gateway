@@ -13,11 +13,19 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.oauth2.client.web.HttpSessionOAuth2AuthorizationRequestRepository;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.cors.CorsConfigurationSource;
 
 @Slf4j
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+
+    private final CorsConfigurationSource corsConfigurationSource;
+
+    // Injeção via construtor (recomendado)
+    public SecurityConfig(CorsConfigurationSource corsConfigurationSource) {
+        this.corsConfigurationSource = corsConfigurationSource;
+    }
 
     // ============================================================
     // FILTRO PÚBLICO
@@ -45,7 +53,7 @@ public class SecurityConfig {
                         "/listings/**",
                         "/recommendations/**"
                 )
-
+                .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
                 .oauth2ResourceServer(AbstractHttpConfigurer::disable)
                 .csrf(AbstractHttpConfigurer::disable);
@@ -91,6 +99,7 @@ public class SecurityConfig {
                         // Fallback
                         .anyRequest().authenticated()
                 )
+                .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .oauth2Login(oauth2 -> oauth2
                         .successHandler(successHandler)
                 )
