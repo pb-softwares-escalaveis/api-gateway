@@ -20,8 +20,8 @@ import java.nio.charset.StandardCharsets;
 @Component
 public class KeycloakLogoutSuccessHandler implements LogoutSuccessHandler {
 
-    @Value("${KEYCLOAK_INTERNAL_URL}")
-    private String keycloakInternalUrl;
+    @Value("${KEYCLOAK_EXTERNAL_URL}")
+    private String keycloakExternalUrl;
 
     @Value("${FRONTEND_URL}")
     private String frontendUrl;
@@ -31,7 +31,7 @@ public class KeycloakLogoutSuccessHandler implements LogoutSuccessHandler {
                                 @NonNull HttpServletResponse response,
                                 Authentication authentication) throws IOException {
         log.info("=== Iniciando logout ===");
-        String keycloakLogoutUrl = keycloakInternalUrl + "/realms/leilao-service/protocol/openid-connect/logout";
+        String keycloakLogoutUrl = keycloakExternalUrl + "/realms/leilao-service/protocol/openid-connect/logout";
         StringBuilder logoutUrl = new StringBuilder(keycloakLogoutUrl);
 
         //Tenta obter o ID token para revogar a sessão no Keycloak
