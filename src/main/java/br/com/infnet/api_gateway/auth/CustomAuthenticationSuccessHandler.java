@@ -58,7 +58,6 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
         attrs.put("user_name", nome);
         attrs.put("user_status", statusResponse.status());
         attrs.put("user_allowed", statusResponse.isAllowed());
-        attrs.put("correlation_id", UUID.randomUUID().toString());
 
         //Cria um novo OAuth2User com os atributos enriquecidos
         OAuth2User newOAuth2User = new DefaultOAuth2User(oauth2User.getAuthorities(), attrs, "sub");

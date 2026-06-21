@@ -52,6 +52,7 @@ public class GatewayRoutesConfig {
     @Bean
     public RouterFunction<ServerResponse> userServiceProtectedRoutes() {
         return route("user-service-protected")
+                .route(path("/usuarios/me"), http())
                 .route(path("/usuarios/listar-pfps"), http())
                 .route(path("/usuarios/trocar-pfp"), http())
                 .route(path("/usuarios/deletar/{id}"), http())

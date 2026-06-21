@@ -78,6 +78,7 @@ public class SecurityConfig {
 
                         // Rotas privadas
                         .requestMatchers(HttpMethod.DELETE, "/usuarios/deletar/{id}").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/usuarios/me").authenticated()
                         .requestMatchers(HttpMethod.POST, "/auctions/{auctionId}/renew").authenticated()
                         .requestMatchers(HttpMethod.POST, "/auctions/{auctionId}/bids/place").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/auctions/{auctionId}").authenticated()

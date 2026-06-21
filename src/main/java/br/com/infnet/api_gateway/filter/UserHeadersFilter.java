@@ -8,7 +8,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
-import org.springframework.core.annotation.Order;
+import org.slf4j.MDC;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.core.user.OAuth2User;
@@ -20,15 +20,13 @@ import java.util.*;
 
 @Slf4j
 @Component
-@Order(0)
 @RequiredArgsConstructor
 public class UserHeadersFilter extends OncePerRequestFilter {
 
-    //Lista de headers customizados por esse filter
     private static final List<String> CUSTOM_HEADERS = List.of(
             "X-User-Id",
             "X-User-Email",
-            "X-User-Nome",
+            "X-User-Name",
             "X-User-Status",
             "X-User-Allowed",
             "X-Correlation-Id"
@@ -37,39 +35,39 @@ public class UserHeadersFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request,
                                     @NonNull HttpServletResponse response,
-                                    @NonNull FilterChain chain) throws ServletException, IOException {
+                                    @NonNull FilterChain chain)
+            throws ServletException, IOException {
+
+        String correlationId = MDC.get("correlationId");
+        if (correlationId == null || correlationId.isEmpty()) {
+            correlationId = UUID.randomUUID().toString();
+        }
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         log.debug("Executando UserHeadersFilter, autenticado: {}", auth != null);
 
-        if (auth != null && auth.isAuthenticated() && auth.getPrincipal() instanceof OAuth2User oauth2User) {
+        if (auth != null && auth.isAuthenticated()
+                && auth.getPrincipal() instanceof OAuth2User oauth2User) {
+
             Map<String, Object> attrs = oauth2User.getAttributes();
 
             if (!attrs.containsKey("user_id")) {
-                log.warn("Atributos customizados não encontrados. O CustomAuthenticationSuccessHandler não foi chamado.");
+                log.warn("Atributos customizados não encontrados.");
                 chain.doFilter(request, response);
                 return;
             }
 
-            //Extrai atributos
             String userId = (String) attrs.get("user_id");
             String email = (String) attrs.get("user_email");
-            String nome = (String) attrs.get("user_name");
+            String name = (String) attrs.get("user_name");
             String status = (String) attrs.get("user_status");
-            boolean allowed = (boolean) attrs.get("user_allowed");
-            String correlationId = (String) attrs.get("correlation_id");
-
-            //Se não existir Correlation ID, cria um novo
-            if (correlationId == null || correlationId.isEmpty()) {
-                correlationId = UUID.randomUUID().toString();
-                log.debug("Correlation ID gerado: {}", correlationId);
-            }
+            Boolean allowed = (Boolean) attrs.get("user_allowed");
 
             final String finalUserId = userId;
             final String finalEmail = email;
-            final String finalNome = nome;
+            final String finalName = name;
             final String finalStatus = status;
-            final boolean finalAllowed = allowed;
+            final boolean finalAllowed = allowed != null && allowed;
             final String finalCorrelationId = correlationId;
 
             log.debug("Injetando headers: userId={}, email={}, correlationId={}",
@@ -81,7 +79,7 @@ public class UserHeadersFilter extends OncePerRequestFilter {
                     return switch (name) {
                         case "X-User-Id" -> finalUserId;
                         case "X-User-Email" -> finalEmail;
-                        case "X-User-Nome" -> finalNome;
+                        case "X-User-Name" -> finalName;
                         case "X-User-Status" -> finalStatus;
                         case "X-User-Allowed" -> String.valueOf(finalAllowed);
                         case "X-Correlation-Id" -> finalCorrelationId;
@@ -110,8 +108,44 @@ public class UserHeadersFilter extends OncePerRequestFilter {
             };
 
             chain.doFilter(wrappedRequest, response);
+
         } else {
-            chain.doFilter(request, response);
+            log.debug("Usuário não autenticado, apenas correlationId será adicionado");
+            HttpServletRequest wrappedRequest = getHttpServletRequest(request, correlationId);
+            chain.doFilter(wrappedRequest, response);
         }
+    }
+
+    private static @NonNull HttpServletRequest getHttpServletRequest(@NonNull HttpServletRequest request, String correlationId) {
+        final String finalCorrelationId = correlationId;
+
+        return new HttpServletRequestWrapper(request) {
+            @Override
+            public String getHeader(String name) {
+                if ("X-Correlation-Id".equals(name)) {
+                    return finalCorrelationId;
+                }
+                return super.getHeader(name);
+            }
+
+            @Override
+            public Enumeration<String> getHeaderNames() {
+                Set<String> names = new HashSet<>();
+                Enumeration<String> original = super.getHeaderNames();
+                while (original.hasMoreElements()) {
+                    names.add(original.nextElement());
+                }
+                names.add("X-Correlation-Id");
+                return Collections.enumeration(names);
+            }
+
+            @Override
+            public Enumeration<String> getHeaders(String name) {
+                if ("X-Correlation-Id".equals(name)) {
+                    return Collections.enumeration(List.of(finalCorrelationId));
+                }
+                return super.getHeaders(name);
+            }
+        };
     }
 }
