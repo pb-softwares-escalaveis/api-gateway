@@ -72,10 +72,6 @@ public class SecurityConfig {
         http
                 .securityMatcher("/**")
                 .authorizeHttpRequests(auth -> auth
-                        // Rotas internas bloqueadas
-                        .requestMatchers(HttpMethod.GET, "/usuarios/status").denyAll()
-                        .requestMatchers(HttpMethod.GET, "/usuarios/{id}").denyAll()
-
                         // Rotas privadas
                         .requestMatchers(HttpMethod.DELETE, "/usuarios/deletar/{id}").authenticated()
                         .requestMatchers(HttpMethod.GET, "/usuarios/me").authenticated()
@@ -97,6 +93,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/report-auction/**").authenticated()
                         .requestMatchers(HttpMethod.POST, "/report-message/**").authenticated()
 
+                        // Rotas internas bloqueadas
+                        .requestMatchers(HttpMethod.GET, "/usuarios/status").denyAll()
+                        .requestMatchers(HttpMethod.GET, "/usuarios/{id}").denyAll()
                         // Fallback
                         .anyRequest().authenticated()
                 )

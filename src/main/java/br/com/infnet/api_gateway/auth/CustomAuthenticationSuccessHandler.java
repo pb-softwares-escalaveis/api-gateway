@@ -49,15 +49,14 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
             String email = (String) attrs.get("email");
             String nome = (String) attrs.get("name");
 
-            log.info("Extraindo informações do token: userId={}, email={}, authorities={}",
-                    userId, email, oauth2User.getAuthorities());
+            log.info("[LOGIN] Usuário: id={}, email={}, nome={}", userId, email, nome);
 
             // Chama o user-service para obter o status do usuário
             log.info("Consultando status do usuario no user-service: userId={}", userId);
             UserStatusResponse statusResponse = userStatusService.getUserStatus(userId);
 
             if (statusResponse == null) {
-                log.warn("Resposta nula do userStatusService, usando valores padrao para userId={}", userId);
+                log.warn("Resposta nula do userStatusService, usando valores padrão para userId={}", userId);
                 statusResponse = new UserStatusResponse(userId, "UNKNOWN", false);
             } else {
                 log.info("Status do usuario obtido com sucesso: userId={}, status={}, allowed={}",
@@ -71,7 +70,6 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
             attrs.put("user_status", statusResponse.status());
             attrs.put("user_allowed", statusResponse.isAllowed());
 
-            log.debug("Atributos enriquecidos: {}", attrs.keySet());
 
             // Cria um novo OAuth2User com os atributos enriquecidos
             OAuth2User newOAuth2User = new DefaultOAuth2User(oauth2User.getAuthorities(), attrs, "sub");

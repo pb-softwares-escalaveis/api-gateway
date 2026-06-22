@@ -9,6 +9,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
 import org.slf4j.MDC;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.core.user.OAuth2User;
@@ -21,6 +23,7 @@ import java.util.*;
 @Slf4j
 @Component
 @RequiredArgsConstructor
+@Order(Ordered.LOWEST_PRECEDENCE - 1)
 public class UserHeadersFilter extends OncePerRequestFilter {
 
     private static final List<String> CUSTOM_HEADERS = List.of(
@@ -38,7 +41,14 @@ public class UserHeadersFilter extends OncePerRequestFilter {
                                     @NonNull FilterChain chain)
             throws ServletException, IOException {
 
+        String path = request.getRequestURI();
+        if (path.startsWith("/actuator/")) {
+            chain.doFilter(request, response);
+            return;
+        }
+
         String correlationId = MDC.get("correlationId");
+        log.debug("Correlation ID do MDC: {}", correlationId);
         if (correlationId == null || correlationId.isEmpty()) {
             correlationId = UUID.randomUUID().toString();
         }
@@ -46,13 +56,13 @@ public class UserHeadersFilter extends OncePerRequestFilter {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         log.debug("Executando UserHeadersFilter, autenticado: {}", auth != null);
 
+
         if (auth != null && auth.isAuthenticated()
                 && auth.getPrincipal() instanceof OAuth2User oauth2User) {
 
             Map<String, Object> attrs = oauth2User.getAttributes();
 
             if (!attrs.containsKey("user_id")) {
-                log.warn("Atributos customizados não encontrados.");
                 chain.doFilter(request, response);
                 return;
             }

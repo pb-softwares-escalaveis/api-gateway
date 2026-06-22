@@ -72,20 +72,22 @@ resilience4j.timelimiter:
     default:
       timeoutDuration: 5s
 
-
 logging:
   level:
+    br.com.infnet.api_gateway: DEBUG
     org.springframework.cloud.gateway: DEBUG
     org.springframework.cloud.gateway.server.mvc.filter.TokenRelayFilterFunctions: DEBUG
     org.springframework.web.servlet.function.support.RouterFunctionMapping: DEBUG
 
     org.springframework.security: DEBUG
+    org.springframework.security.oauth2: DEBUG
     org.springframework.security.oauth2.client: DEBUG
     org.springframework.security.web: DEBUG
 
     org.springframework.web: DEBUG
     org.springframework.web.reactive.function.client: DEBUG
-
+    org.springframework.web.cors: DEBUG
+    org.springframework.web.filter: DEBUG
     io.github.resilience4j: DEBUG
 
     io.micrometer: INFO
