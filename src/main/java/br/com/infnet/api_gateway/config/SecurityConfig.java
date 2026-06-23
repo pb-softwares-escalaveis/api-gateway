@@ -22,7 +22,6 @@ public class SecurityConfig {
 
     private final CorsConfigurationSource corsConfigurationSource;
 
-    // Injeção via construtor (recomendado)
     public SecurityConfig(CorsConfigurationSource corsConfigurationSource) {
         this.corsConfigurationSource = corsConfigurationSource;
     }
