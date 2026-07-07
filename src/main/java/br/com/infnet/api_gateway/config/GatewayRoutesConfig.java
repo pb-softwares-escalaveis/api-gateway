@@ -125,7 +125,7 @@ public class GatewayRoutesConfig {
                 .route(path("/payments/transaction/{id}"), http())
                 .route(path("/payments/auction/{id}"), http())
                 .route(path("/payments/bidder/{id}"), http())
-                .route(path("/simulate/{providerPaymentId}"), http())
+                .route(path("/payments/simulate/{providerPaymentId}"), http())
                 .filter(lb("PAYMENT-SERVICE"))
                 .filter(tokenRelay())
                 .filter(circuitBreaker("paymentServiceCB", URI.create("forward:/fallback/payment-service")))

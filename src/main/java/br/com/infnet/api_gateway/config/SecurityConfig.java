@@ -72,6 +72,12 @@ public class SecurityConfig {
                 .securityMatcher("/**")
                 .authorizeHttpRequests(auth -> auth
                         // Rotas privadas
+                        .requestMatchers(HttpMethod.POST, "/report-auction").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/report-message").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/payments/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/simulate/**").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/transactions/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/transactions/**").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/usuarios/deletar/{id}").authenticated()
                         .requestMatchers(HttpMethod.GET, "/usuarios/me").authenticated()
                         .requestMatchers(HttpMethod.POST, "/auctions/{auctionId}/renew").authenticated()
@@ -85,12 +91,6 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/usuarios/trocar-pfp").authenticated()
                         .requestMatchers(HttpMethod.POST, "/auctions/create").authenticated()
                         .requestMatchers(HttpMethod.POST, "/auctions").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/payments/**").authenticated()
-                        .requestMatchers(HttpMethod.POST, "/simulate/**").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/transactions/**").authenticated()
-                        .requestMatchers(HttpMethod.POST, "/transactions/**").authenticated()
-                        .requestMatchers(HttpMethod.POST, "/report-auction/**").authenticated()
-                        .requestMatchers(HttpMethod.POST, "/report-message/**").authenticated()
 
                         // Rotas internas bloqueadas
                         .requestMatchers(HttpMethod.GET, "/usuarios/status").denyAll()
