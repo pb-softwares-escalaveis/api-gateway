@@ -91,7 +91,7 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
                     SecurityContextHolder.getContext());
 
             // Redireciona para a página inicial do front-end
-            String redirectUrl = "http://localhost:3000/home";
+            String redirectUrl = "https://oleiloeiroonline.top";
             log.info("Redirecionando para: {}", redirectUrl);
 
             long duration = System.currentTimeMillis() - startTime;

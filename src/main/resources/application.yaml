@@ -10,7 +10,6 @@ spring:
       resourceserver:
         jwt:
           issuer-uri: ${KEYCLOAK_INTERNAL_URL}/realms/leilao-service
-
       client:
         provider:
           keycloak:
